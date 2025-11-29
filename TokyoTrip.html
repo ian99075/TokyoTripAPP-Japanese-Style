@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>東京家庭旅遊 | 自由設定版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
+        .app-container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; position: relative; padding-bottom: 90px; }
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .rotate-anim { transition: transform 0.3s ease; }
+        .rotate-anim:active { transform: rotate(180deg); }
+        .map-frame { border: 0; width: 100%; height: 100%; border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+    <div x-data="travelApp()" x-init="initApp()" class="app-container">
+        
+        <header class="bg-gray-900 text-white p-6 rounded-b-3xl shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-20"><i class="fas fa-plane-departure fa-5x"></i></div>
+            <div class="relative z-10">
+                <div class="flex justify-between items-start">
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-1 rounded text-white" x-text="getYear() + ' TRIP'"></span>
+                    
+                    <div class="flex space-x-2">
+                        <button @click="showSettingsModal = true" class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition">
+                            <i class="fas fa-cog"></i> 設定
+                        </button>
+                        <button @click="fetchRealTimeData()" class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition">
+                            <i class="fas fa-sync-alt" :class="{'fa-spin': isLoading}"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <h1 class="text-2xl font-bold mt-2" x-text="tripSettings.title"></h1>
+                
+                <p class="text-sm opacity-80 mt-1">
+                    <i class="far fa-calendar-alt"></i> 
+                    <span x-text="formatDateRange()"></span> 
+                    (<span x-text="tripDuration"></span>天)
+                </p>
+                
+                <div class="mt-4 flex space-x-3 h-20">
+                    <div class="bg-gray-800 rounded-lg p-2 flex-1 text-center flex flex-col justify-center items-center">
+                        <i class="fas fa-temperature-high text-yellow-400 text-2xl mb-1"></i>
+                        <span class="text-lg font-bold tracking-wider" x-text="weatherText">...</span>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-2 flex-1 text-center flex flex-col justify-center items-center">
+                        <i class="fas fa-yen-sign text-green-400 block mb-1"></i>
+                        <span class="text-sm font-bold">匯率 <span x-text="exchangeRate">...</span></span>
+                        <p class="text-[10px] text-gray-400 mt-1 scale-90">更新於: <span x-text="rateDate || '--'"></span></p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-4" :class="{'h-[calc(100vh-280px)]': currentTab === 'map'}">
+            
+            <div x-show="currentTab === 'trip'" class="space-y-4">
+                
+                <div class="card bg-blue-50 border-blue-100 relative">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-blue-800"><i class="fas fa-passport mr-1"></i> 旅遊資訊</h3>
+                        <button @click="isEditingInfo = !isEditingInfo" class="text-xs text-blue-500 bg-white px-2 py-1 rounded border border-blue-200">
+                            <span x-text="isEditingInfo ? '完成' : '✎ 編輯'"></span>
+                        </button>
+                    </div>
+                    
+                    <div x-show="!isEditingInfo" class="space-y-3 text-sm">
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1"><i class="fas fa-plane-departure text-gray-400"></i></div>
+                            <div>
+                                <p class="font-bold text-gray-800"><span x-text="travelInfo.flightOut.airline" class="text-blue-600 mr-1"></span><span x-text="travelInfo.flightOut.no || '未設定航班'"></span></p>
+                                <p class="text-xs text-gray-500" x-text="(travelInfo.flightOut.date || '') + ' ' + (travelInfo.flightOut.time || '')"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <div class="mt-1"><i class="fas fa-plane-arrival text-gray-400"></i></div>
+                            <div>
+                                <p class="font-bold text-gray-800"><span x-text="travelInfo.flightIn.airline" class="text-blue-600 mr-1"></span><span x-text="travelInfo.flightIn.no || '未設定航班'"></span></p>
+                                <p class="text-xs text-gray-500" x-text="(travelInfo.flightIn.date || '') + ' ' + (travelInfo.flightIn.time || '')"></p>
+                            </div>
+                        </div>
+                        <div class="border-t border-blue-200 pt-2 flex items-start space-x-2">
+                            <div class="mt-1"><i class="fas fa-hotel text-gray-400"></i></div>
+                            <div class="flex-1">
+                                <p class="font-bold text-gray-700" x-text="travelInfo.hotel.name || '未設定住宿'"></p>
+                                <button @click="searchInMap(travelInfo.hotel.name)" class="text-xs text-blue-500 hover:underline text-left mt-0.5"><i class="fas fa-map-marker-alt"></i> <span x-text="travelInfo.hotel.address || '點此導航'"></span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="isEditingInfo" class="space-y-3 text-sm">
+                        <div class="bg-white p-2 rounded border border-blue-100">
+                            <p class="text-xs text-gray-400 mb-1">去程</p>
+                            <select x-model="travelInfo.flightOut.airline" class="w-full p-1 border rounded mb-2 bg-gray-50"><option value="">選擇航空公司...</option><template x-for="air in airlineOptions"><option :value="air" x-text="air"></option></template></select>
+                            <div class="grid grid-cols-2 gap-2"><input x-model="travelInfo.flightOut.no" placeholder="航班號" class="p-1 border rounded"><input x-model="travelInfo.flightOut.time" type="time" class="p-1 border rounded"></div>
+                        </div>
+                        <div class="bg-white p-2 rounded border border-blue-100">
+                            <p class="text-xs text-gray-400 mb-1">回程</p>
+                            <select x-model="travelInfo.flightIn.airline" class="w-full p-1 border rounded mb-2 bg-gray-50"><option value="">選擇航空公司...</option><template x-for="air in airlineOptions"><option :value="air" x-text="air"></option></template></select>
+                            <div class="grid grid-cols-2 gap-2"><input x-model="travelInfo.flightIn.no" placeholder="航班號" class="p-1 border rounded"><input x-model="travelInfo.flightIn.time" type="time" class="p-1 border rounded"></div>
+                        </div>
+                        <div class="bg-white p-2 rounded border border-blue-100">
+                            <p class="text-xs text-gray-400 mb-1">住宿</p>
+                            <input x-model="travelInfo.hotel.name" placeholder="飯店名稱" class="w-full p-1 border rounded mb-2">
+                            <input x-model="travelInfo.hotel.address" placeholder="地址" class="w-full p-1 border rounded">
+                        </div>
+                        <button @click="saveData(); isEditingInfo = false" class="w-full bg-blue-500 text-white py-2 rounded font-bold shadow-sm">儲存資訊</button>
+                    </div>
+                </div>
+
+                <div class="flex overflow-x-auto space-x-2 pb-2 hide-scrollbar">
+                    <template x-for="day in tripDuration" :key="day">
+                        <button @click="currentDay = day" 
+                                :class="{'bg-pink-500 text-white shadow-md': currentDay === day, 'bg-white text-gray-500 border': currentDay !== day}"
+                                class="px-4 py-2 rounded-full whitespace-nowrap text-sm font-bold transition flex flex-col items-center">
+                            <span>Day <span x-text="day"></span></span>
+                            <span class="text-[10px] font-normal opacity-80" x-text="getDateLabel(day)"></span>
+                        </button>
+                    </template>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-gray-700">Day <span x-text="currentDay"></span> (<span x-text="getDateLabel(currentDay)"></span>)</h2>
+                    <button @click="showAddEventModal = true" class="text-pink-500 text-sm font-bold"><i class="fas fa-plus-circle"></i> 新增</button>
+                </div>
+                <button @click="showDayRoute(currentDay)" class="w-full py-2 bg-blue-50 text-blue-600 rounded-xl border border-blue-200 text-sm font-bold flex items-center justify-center hover:bg-blue-100 transition">
+                    <i class="fas fa-route mr-2"></i>在地圖上顯示今日路線
+                </button>
+                <div class="space-y-3">
+                    <template x-for="(event, index) in getEvents(currentDay)" :key="index">
+                        <div class="card flex items-start space-x-3 relative group">
+                            <div class="text-gray-500 font-mono text-sm pt-1 w-12" x-text="event.time"></div>
+                            <div class="flex-1 pr-6">
+                                <h3 class="font-bold text-gray-800" x-text="event.title"></h3>
+                                <button @click="searchInMap(event.title + ' ' + event.location)" class="text-xs text-blue-500 mt-1 flex items-center hover:underline text-left">
+                                    <i class="fas fa-map-marker-alt text-red-400 mr-1"></i> <span x-text="event.location || '在地圖中查看'"></span>
+                                </button>
+                            </div>
+                            <button @click="deleteEvent(currentDay, index)" class="text-gray-300 hover:text-red-500 absolute top-2 right-2"><i class="fas fa-times"></i></button>
+                        </div>
+                    </template>
+                    <div x-show="getEvents(currentDay).length === 0" class="text-center py-8 text-gray-400"><p>今天還沒有行程喔！</p></div>
+                </div>
+            </div>
+
+            <div x-show="currentTab === 'map'" class="h-full flex flex-col space-y-3">
+                <div class="flex space-x-2">
+                    <input type="text" x-model="mapSearchQuery" @keyup.enter="updateMap()" placeholder="輸入地點 (如: 東京鐵塔)" class="flex-1 p-2 border rounded-lg text-sm shadow-sm focus:outline-pink-500">
+                    <button @click="updateMap()" class="bg-blue-500 text-white px-4 rounded-lg shadow-sm"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="flex-1 bg-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200 relative">
+                    <iframe :src="mapUrl" class="map-frame" loading="lazy" allowfullscreen></iframe>
+                    <div x-show="isMapLoading" class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i></div>
+                </div>
+            </div>
+
+            <div x-show="currentTab === 'shopping'" class="space-y-4">
+                <div class="flex bg-gray-200 rounded-lg p-1">
+                    <button @click="currentListTab = 'prep'" :class="{'bg-white shadow text-gray-800': currentListTab === 'prep', 'text-gray-500': currentListTab !== 'prep'}" class="flex-1 py-1.5 rounded-md text-sm font-bold transition text-center"><i class="fas fa-clipboard-check mr-1"></i> 行前準備</button>
+                    <button @click="currentListTab = 'shop'" :class="{'bg-white shadow text-pink-600': currentListTab === 'shop', 'text-gray-500': currentListTab !== 'shop'}" class="flex-1 py-1.5 rounded-md text-sm font-bold transition text-center"><i class="fas fa-shopping-cart mr-1"></i> 購物清單</button>
+                </div>
+                <div x-show="currentListTab === 'prep'" class="space-y-2 pb-20">
+                    <div class="bg-blue-50 p-4 rounded-xl text-blue-800 text-sm mb-2"><p class="font-bold"><i class="fas fa-info-circle"></i> 溫馨提醒</p><p class="opacity-80 mt-1">請確保護照效期大於 6 個月，並提前截圖 Visit Japan Web QR Code。</p></div>
+                    <div class="flex space-x-2 mb-4"><input x-model="newPrepItem" @keyup.enter="addPrepItem()" type="text" placeholder="新增準備項目..." class="flex-1 p-2 border rounded-lg text-sm focus:outline-blue-500"><button @click="addPrepItem()" class="bg-blue-500 text-white px-3 rounded-lg"><i class="fas fa-plus"></i></button></div>
+                    <template x-for="(item, index) in prepList" :key="index">
+                        <div class="card flex items-center justify-between py-3 px-4" :class="{'bg-gray-50': item.done}">
+                            <div class="flex items-center space-x-3"><input type="checkbox" x-model="item.done" @change="saveData()" class="w-5 h-5 text-blue-500 rounded focus:ring-blue-500"><span class="font-bold text-gray-700" :class="{'line-through text-gray-400': item.done}" x-text="item.name"></span></div><button @click="deletePrepItem(index)" class="text-gray-300 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </template>
+                </div>
+                <div x-show="currentListTab === 'shop'" class="space-y-4 pb-20">
+                    <div class="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-4 text-white shadow-lg">
+                        <div class="flex justify-between items-end">
+                            <div><p class="text-xs opacity-80 mb-1">購物總金額 (JPY)</p><h2 class="text-3xl font-bold">¥<span x-text="shoppingTotal.toLocaleString()"></span></h2></div>
+                            <div class="text-right"><p class="text-xs opacity-80">約台幣</p><p class="font-bold">NT$ <span x-text="Math.round(shoppingTotal * exchangeRate).toLocaleString()"></span></p></div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-white/20">
+                            <div class="flex items-center justify-between text-sm"><span>免稅門檻 (¥5,000)</span><span x-show="shoppingTotal >= 5000" class="bg-white text-pink-600 px-2 py-0.5 rounded text-xs font-bold">✅ 已達標</span><span x-show="shoppingTotal < 5000" class="text-white/80 text-xs">還差 ¥<span x-text="(5000 - shoppingTotal).toLocaleString()"></span></span></div>
+                            <div class="w-full bg-black/20 rounded-full h-2 mt-2"><div class="bg-white h-2 rounded-full transition-all duration-500" :style="'width: ' + Math.min((shoppingTotal / 5000) * 100, 100) + '%'"></div></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex space-x-2 mb-4"><input x-model="newItemName" type="text" placeholder="品名" class="flex-1 p-2 border rounded-lg text-sm focus:outline-pink-500"><input x-model="newItemPrice" type="number" placeholder="日幣" class="w-20 p-2 border rounded-lg text-sm focus:outline-pink-500"><button @click="addNewItem()" class="bg-pink-500 text-white px-3 rounded-lg"><i class="fas fa-plus"></i></button></div>
+                        <template x-for="(item, index) in shoppingList" :key="index">
+                            <div class="card flex items-center justify-between py-3 px-4">
+                                <div class="flex items-center space-x-3"><input type="checkbox" x-model="item.bought" @change="saveData()" class="w-5 h-5 text-pink-500 rounded focus:ring-pink-500"><div :class="{'opacity-50 line-through': item.bought}"><p class="font-bold text-gray-800" x-text="item.name"></p><p class="text-xs text-gray-500">¥<span x-text="item.price"></span></p></div></div><button @click="deleteItem(index)" class="text-gray-300 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="currentTab === 'tools'" class="space-y-4">
+                <div class="card text-center py-6 border-l-4 border-l-yellow-400 relative">
+                    <h3 class="text-gray-500 font-bold mb-4">匯率換算器</h3>
+                    <div class="flex items-center justify-center space-x-2 mb-4">
+                        <div class="w-1/3"><p class="text-xs text-gray-400 mb-1" x-text="isJpyToTwd ? '日幣 (JPY)' : '台幣 (TWD)'"></p><input type="number" x-model="convertInput" class="text-2xl font-bold text-center w-full border-b-2 border-gray-200 focus:outline-none focus:border-yellow-400 bg-transparent" placeholder="0"></div>
+                        <div class="w-1/6 flex justify-center"><button @click="isJpyToTwd = !isJpyToTwd" class="bg-yellow-100 p-2 rounded-full text-yellow-600 hover:bg-yellow-200 transition shadow-sm rotate-anim"><i class="fas fa-exchange-alt"></i></button></div>
+                        <div class="w-1/3"><p class="text-xs text-gray-400 mb-1" x-text="isJpyToTwd ? '台幣 (TWD)' : '日幣 (JPY)'"></p><div class="text-2xl font-bold text-gray-800 overflow-hidden text-ellipsis"><span x-text="calculateExchange()">0</span></div></div>
+                    </div>
+                    <div class="text-xs text-gray-400 bg-gray-50 inline-block px-3 py-1 rounded-full"><span x-show="isJpyToTwd">模式：日幣 ➡ 台幣</span><span x-show="!isJpyToTwd">模式：台幣 ➡ 日幣</span></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-red-500 text-white p-4 rounded-xl shadow-md flex items-center justify-between"><div><p class="text-xs opacity-80">救護車/火警</p><p class="text-2xl font-bold">119</p></div><i class="fas fa-ambulance text-3xl opacity-50"></i></div>
+                    <div class="bg-blue-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between"><div><p class="text-xs opacity-80">報警</p><p class="text-2xl font-bold">110</p></div><i class="fas fa-user-shield text-3xl opacity-50"></i></div>
+                </div>
+            </div>
+        </main>
+
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center py-3 pb-6 z-50 max-w-[480px] mx-auto">
+            <button @click="currentTab = 'trip'" :class="{'text-pink-500': currentTab === 'trip', 'text-gray-400': currentTab !== 'trip'}" class="flex flex-col items-center w-1/4"><i class="fas fa-map-marked-alt text-xl mb-1"></i><span class="text-xs">行程</span></button>
+            <button @click="currentTab = 'map'" :class="{'text-blue-500': currentTab === 'map', 'text-gray-400': currentTab !== 'map'}" class="flex flex-col items-center w-1/4"><i class="fas fa-map text-xl mb-1"></i><span class="text-xs">地圖</span></button>
+            <button @click="currentTab = 'shopping'" :class="{'text-pink-500': currentTab === 'shopping', 'text-gray-400': currentTab !== 'shopping'}" class="flex flex-col items-center w-1/4"><i class="fas fa-shopping-bag text-xl mb-1"></i><span class="text-xs">清單</span></button>
+            <button @click="currentTab = 'tools'" :class="{'text-pink-500': currentTab === 'tools', 'text-gray-400': currentTab !== 'tools'}" class="flex flex-col items-center w-1/4"><i class="fas fa-tools text-xl mb-1"></i><span class="text-xs">工具</span></button>
+        </nav>
+
+        <div x-show="showSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" style="display: none;">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
+                <h3 class="font-bold text-lg mb-4">⚙️ 行程設定</h3>
+                <div class="space-y-3">
+                    <div><label class="text-xs text-gray-500">旅行名稱</label><input x-model="tripSettings.title" class="w-full border p-2 rounded"></div>
+                    <div><label class="text-xs text-gray-500">開始日期</label><input x-model="tripSettings.startDate" type="date" class="w-full border p-2 rounded"></div>
+                    <div><label class="text-xs text-gray-500">結束日期</label><input x-model="tripSettings.endDate" type="date" class="w-full border p-2 rounded"></div>
+                    <div class="text-right text-xs text-gray-400">將自動計算並調整天數</div>
+                </div>
+                <div class="flex space-x-2 mt-4"><button @click="showSettingsModal = false" class="flex-1 py-2 text-gray-500">取消</button><button @click="saveTripSettings()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold">儲存</button></div>
+            </div>
+        </div>
+
+        <div x-show="showAddEventModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" style="display: none;">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
+                <h3 class="font-bold text-lg mb-4">新增 Day <span x-text="currentDay"></span> 行程</h3>
+                <input x-model="newEvent.time" type="time" class="w-full border p-2 rounded mb-3">
+                <input x-model="newEvent.title" type="text" placeholder="地點/活動名稱 (例如: 淺草寺)" class="w-full border p-2 rounded mb-3">
+                <input x-model="newEvent.location" type="text" placeholder="位置備註 (例如: 雷門集合)" class="w-full border p-2 rounded mb-4">
+                <div class="flex space-x-2"><button @click="showAddEventModal = false" class="flex-1 py-2 text-gray-500">取消</button><button @click="addEvent()" class="flex-1 py-2 bg-pink-500 text-white rounded-lg font-bold">新增</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function travelApp() {
+            return {
+                currentTab: 'trip',
+                currentListTab: 'prep', 
+                currentDay: 1,
+                exchangeRate: 0.21,
+                rateDate: '',
+                weatherText: '載入中...',
+                isLoading: false,
+                convertInput: '',
+                isJpyToTwd: true,
+                showAddEventModal: false,
+                isEditingInfo: false,
+                showSettingsModal: false, // ✨ 新增設定 Modal 狀態
+
+                // ✨ 自訂行程設定
+                tripSettings: {
+                    title: '東京全家 7 日遊 🗼',
+                    startDate: '2026-05-10',
+                    endDate: '2026-05-16'
+                },
+
+                airlineOptions: ['中華航空', '長榮航空', '星宇航空', '台灣虎航', '酷航', '國泰航空', '日本航空 (JAL)', '全日空 (ANA)', '樂桃航空', '捷星航空', '其他'],
+
+                shoppingList: [],
+                prepList: [],
+                itinerary: {},
+                travelInfo: {
+                    flightOut: { airline: '', date: '', time: '', no: '' },
+                    flightIn: { airline: '', date: '', time: '', no: '' },
+                    hotel: { name: '', address: '' }
+                },
+                
+                newItemName: '',
+                newItemPrice: '',
+                newPrepItem: '',
+                newEvent: { time: '10:00', title: '', location: '' },
+                mapSearchQuery: '',
+                mapUrl: 'https://maps.google.com/maps?q=Tokyo&output=embed',
+                isMapLoading: false,
+
+                // ✨ 計算總天數
+                get tripDuration() {
+                    const start = new Date(this.tripSettings.startDate);
+                    const end = new Date(this.tripSettings.endDate);
+                    const diffTime = Math.abs(end - start);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+                    return diffDays || 1;
+                },
+
+                // ✨ 取得年份
+                getYear() {
+                    return this.tripSettings.startDate.split('-')[0];
+                },
+
+                // ✨ 格式化日期範圍顯示 (例如: 5/10 - 5/16)
+                formatDateRange() {
+                    const format = (d) => {
+                        const date = new Date(d);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                    };
+                    return `${format(this.tripSettings.startDate)} - ${format(this.tripSettings.endDate)}`;
+                },
+
+                // ✨ 取得某一天是幾月幾號
+                getDateLabel(dayIndex) {
+                    const date = new Date(this.tripSettings.startDate);
+                    date.setDate(date.getDate() + (dayIndex - 1));
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                },
+
+                initApp() {
+                    const savedShopping = localStorage.getItem('tokyo_shopping');
+                    const savedItinerary = localStorage.getItem('tokyo_itinerary');
+                    const savedPrep = localStorage.getItem('tokyo_prep');
+                    const savedInfo = localStorage.getItem('tokyo_info');
+                    const savedSettings = localStorage.getItem('tokyo_settings'); // 讀取設定
+                    
+                    if (savedShopping) this.shoppingList = JSON.parse(savedShopping);
+                    else this.shoppingList = [{ name: '安耐曬防曬', price: 2500, bought: false }];
+
+                    if (savedItinerary) this.itinerary = JSON.parse(savedItinerary);
+                    else this.itinerary = { 1: [{ time: '14:00', title: '成田機場抵達', location: 'T2航廈' }] };
+
+                    if (savedPrep) this.prepList = JSON.parse(savedPrep);
+                    else this.prepList = [
+                        { name: '護照 (效期6個月以上)', done: false },
+                        { name: 'Visit Japan Web 登錄截圖', done: false },
+                        { name: '日幣現金 / 信用卡', done: false },
+                        { name: '網卡 / 漫遊開通', done: false },
+                        { name: '手機充電線 / 行動電源', done: false }
+                    ];
+
+                    if (savedInfo) {
+                        this.travelInfo = JSON.parse(savedInfo);
+                        if(!this.travelInfo.flightOut.airline) this.travelInfo.flightOut.airline = '';
+                        if(!this.travelInfo.flightIn.airline) this.travelInfo.flightIn.airline = '';
+                    }
+
+                    if (savedSettings) this.tripSettings = JSON.parse(savedSettings);
+
+                    this.fetchRealTimeData();
+                },
+
+                // ✨ 儲存行程設定
+                saveTripSettings() {
+                    this.saveData();
+                    this.showSettingsModal = false;
+                },
+
+                addPrepItem() { if(!this.newPrepItem) return; this.prepList.push({ name: this.newPrepItem, done: false }); this.newPrepItem = ''; this.saveData(); },
+                deletePrepItem(index) { this.prepList.splice(index, 1); this.saveData(); },
+                updateMap() { if(!this.mapSearchQuery) return; this.isMapLoading = true; this.mapUrl = 'https://maps.google.com/maps?q=' + encodeURIComponent(this.mapSearchQuery + ' 東京') + '&output=embed'; setTimeout(() => { this.isMapLoading = false; }, 1500); },
+                searchInMap(location) { if(!location) return; this.mapSearchQuery = location; this.currentTab = 'map'; this.updateMap(); },
+                showDayRoute(day) { const events = this.itinerary[day] || []; if (events.length === 0) { alert('當天沒有行程喔！'); return; } if (events.length === 1) { this.searchInMap(events[0].title); return; } const start = events[0].title; const end = events[events.length - 1].title; this.isMapLoading = true; this.currentTab = 'map'; this.mapUrl = 'https://maps.google.com/maps?q=from:' + encodeURIComponent(start) + '+to:' + encodeURIComponent(end) + '&output=embed'; setTimeout(() => { this.isMapLoading = false; }, 1500); },
+                calculateExchange() { if (!this.convertInput) return 0; return this.isJpyToTwd ? Math.round(this.convertInput * this.exchangeRate) : Math.round(this.convertInput / this.exchangeRate); },
+                async fetchRealTimeData() { this.isLoading = true; this.weatherText = '...'; try { const rateRes = await fetch('https://api.exchangerate-api.com/v4/latest/JPY'); const rateData = await rateRes.json(); if(rateData && rateData.rates && rateData.rates.TWD) { this.exchangeRate = rateData.rates.TWD; this.rateDate = rateData.date; } } catch (e) { console.error(e); } try { const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.6895&longitude=139.6917&current_weather=true'); const weatherData = await weatherRes.json(); if(weatherData && weatherData.current_weather) { this.weatherText = `東京 ${weatherData.current_weather.temperature}°C`; } } catch (e) { this.weatherText = '無法取得'; } this.isLoading = false; },
+                get shoppingTotal() { return this.shoppingList.filter(item => item.bought).reduce((sum, item) => sum + parseInt(item.price || 0), 0); },
+                addNewItem() { if (!this.newItemName) return; this.shoppingList.push({ name: this.newItemName, price: this.newItemPrice || 0, bought: false }); this.newItemName = ''; this.newItemPrice = ''; this.saveData(); },
+                deleteItem(index) { this.shoppingList.splice(index, 1); this.saveData(); },
+                getEvents(day) { return (this.itinerary[day] || []).sort((a, b) => a.time.localeCompare(b.time)); },
+                addEvent() { if (!this.itinerary[this.currentDay]) this.itinerary[this.currentDay] = []; this.itinerary[this.currentDay].push({ ...this.newEvent }); this.showAddEventModal = false; this.newEvent = { time: '10:00', title: '', location: '' }; this.saveData(); },
+                deleteEvent(day, index) { this.itinerary[day].splice(index, 1); this.saveData(); },
+                saveData() { 
+                    localStorage.setItem('tokyo_shopping', JSON.stringify(this.shoppingList)); 
+                    localStorage.setItem('tokyo_itinerary', JSON.stringify(this.itinerary)); 
+                    localStorage.setItem('tokyo_prep', JSON.stringify(this.prepList)); 
+                    localStorage.setItem('tokyo_info', JSON.stringify(this.travelInfo));
+                    localStorage.setItem('tokyo_settings', JSON.stringify(this.tripSettings)); // ✨ 儲存設定
+                }
+            }
+        }
+    </script>
+</body>
+</html>
