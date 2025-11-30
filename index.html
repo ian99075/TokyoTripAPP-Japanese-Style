@@ -136,10 +136,10 @@
                         <div x-show="!isEditingInfo" class="space-y-6">
                             
                             <div>
-                                <div class="flex justify-between items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
-                                    <span class="bg-gray-200 px-1 rounded-sm text-[10px] text-gray-600 font-bold">去程</span>
-                                    <span class="font-bold text-gray-700" x-text="travelInfo.flightOut.date"></span>
-                                    <span><span x-text="travelInfo.flightOut.airline"></span> <span x-text="travelInfo.flightOut.no"></span></span>
+                                <div class="flex items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
+                                    <div class="w-1/4"><span class="bg-gray-200 px-1 rounded-sm text-[10px] text-gray-600 font-bold">去程</span></div>
+                                    <div class="w-2/4 text-center font-bold text-gray-700" x-text="travelInfo.flightOut.date"></div>
+                                    <div class="w-1/4 text-right"><span x-text="travelInfo.flightOut.airline"></span> <span x-text="travelInfo.flightOut.no"></span></div>
                                 </div>
                                 <div class="flex justify-between items-center mt-3">
                                     <div class="text-center">
@@ -161,10 +161,10 @@
                             </div>
 
                             <div>
-                                <div class="flex justify-between items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
-                                    <span class="bg-gray-200 px-1 rounded-sm text-[10px] text-gray-600 font-bold">回程</span>
-                                    <span class="font-bold text-gray-700" x-text="travelInfo.flightIn.date"></span>
-                                    <span><span x-text="travelInfo.flightIn.airline"></span> <span x-text="travelInfo.flightIn.no"></span></span>
+                                <div class="flex items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
+                                    <div class="w-1/4"><span class="bg-gray-200 px-1 rounded-sm text-[10px] text-gray-600 font-bold">回程</span></div>
+                                    <div class="w-2/4 text-center font-bold text-gray-700" x-text="travelInfo.flightIn.date"></div>
+                                    <div class="w-1/4 text-right"><span x-text="travelInfo.flightIn.airline"></span> <span x-text="travelInfo.flightIn.no"></span></div>
                                 </div>
                                 <div class="flex justify-between items-center mt-3">
                                     <div class="text-center">
@@ -174,7 +174,7 @@
                                     <div class="flex-1 px-4 flex flex-col items-center">
                                         <span class="text-[10px] text-gray-400 mb-1 font-mono" x-text="calculateDuration(travelInfo.flightIn.depTime, travelInfo.flightIn.arrTime)"></span>
                                         <div class="flex items-center w-full">
-                                            <i class="fas fa-plane text-gray-300 text-xs mr-2 transform rotate-180"></i>
+                                            <i class="fas fa-plane text-gray-300 text-xs mr-2"></i>
                                             <div class="flight-line"></div>
                                         </div>
                                     </div>
@@ -205,7 +205,10 @@
                                     <select x-model="travelInfo.flightOut.airline" class="w-1/2 p-1 bg-white border border-gray-300 rounded-sm text-xs"><option value="">航空公司...</option><template x-for="air in airlineOptions"><option :value="air" x-text="air"></option></template></select>
                                     <input x-model="travelInfo.flightOut.no" placeholder="航班號 (BR198)" class="w-1/2 p-1 border border-gray-300 rounded-sm text-xs">
                                 </div>
-                                <div class="flex space-x-2 mb-2"><input x-model="travelInfo.flightOut.date" type="date" class="w-full p-1 border border-gray-300 rounded-sm text-xs"></div>
+                                <div class="mb-2">
+                                    <label class="text-[10px] text-gray-400 block mb-1">出發日期</label>
+                                    <input x-model="travelInfo.flightOut.date" type="date" class="w-full p-1 border border-gray-300 rounded-sm text-xs">
+                                </div>
                                 <div class="grid grid-cols-2 gap-2 mb-2">
                                     <div><label class="text-[10px] text-gray-400">出發時間</label><input x-model="travelInfo.flightOut.depTime" type="time" class="w-full p-1 border border-gray-300 rounded-sm text-xs"></div>
                                     <div><label class="text-[10px] text-gray-400">抵達時間</label><input x-model="travelInfo.flightOut.arrTime" type="time" class="w-full p-1 border border-gray-300 rounded-sm text-xs"></div>
@@ -222,7 +225,10 @@
                                     <select x-model="travelInfo.flightIn.airline" class="w-1/2 p-1 bg-white border border-gray-300 rounded-sm text-xs"><option value="">航空公司...</option><template x-for="air in airlineOptions"><option :value="air" x-text="air"></option></template></select>
                                     <input x-model="travelInfo.flightIn.no" placeholder="航班號 (BR197)" class="w-1/2 p-1 border border-gray-300 rounded-sm text-xs">
                                 </div>
-                                <div class="flex space-x-2 mb-2"><input x-model="travelInfo.flightIn.date" type="date" class="w-full p-1 border border-gray-300 rounded-sm text-xs"></div>
+                                <div class="mb-2">
+                                    <label class="text-[10px] text-gray-400 block mb-1">出發日期</label>
+                                    <input x-model="travelInfo.flightIn.date" type="date" class="w-full p-1 border border-gray-300 rounded-sm text-xs">
+                                </div>
                                 <div class="grid grid-cols-2 gap-2 mb-2">
                                     <div><label class="text-[10px] text-gray-400">出發時間</label><input x-model="travelInfo.flightIn.depTime" type="time" class="w-full p-1 border border-gray-300 rounded-sm text-xs"></div>
                                     <div><label class="text-[10px] text-gray-400">抵達時間</label><input x-model="travelInfo.flightIn.arrTime" type="time" class="w-full p-1 border border-gray-300 rounded-sm text-xs"></div>
@@ -296,6 +302,7 @@
             </div>
 
             <div x-show="currentTab === 'shopping'" class="space-y-4">
+                
                 <div class="grid grid-cols-2 gap-3 bg-gray-200 p-1 rounded-md">
                     <button @click="currentListTab = 'prep'" :class="{'bg-white text-gray-800 shadow-sm font-bold': currentListTab === 'prep', 'text-gray-500': currentListTab !== 'prep'}" class="py-2 text-xs tracking-widest rounded transition">行前準備</button>
                     <button @click="currentListTab = 'shop'" :class="{'bg-white text-muji shadow-sm font-bold': currentListTab === 'shop', 'text-gray-500': currentListTab !== 'shop'}" class="py-2 text-xs tracking-widest rounded transition">購物清單</button>
@@ -428,9 +435,7 @@
                     <button @click="saveTripSettings()" class="flex-1 py-2 bg-muji text-white text-xs font-bold tracking-widest hover:opacity-90 rounded-sm shadow-sm">確定</button>
                 </div>
                 <div class="mt-6 pt-4 border-t border-gray-100 text-center">
-                    <button @click="resetData()" class="text-xs text-red-400 hover:text-red-600 underline tracking-wide">
-                        <i class="fas fa-trash-alt mr-1"></i>清除所有資料並重置
-                    </button>
+                    <button @click="resetData()" class="text-xs text-red-400 hover:text-red-600 underline tracking-wide"><i class="fas fa-trash-alt mr-1"></i>清除所有資料並重置</button>
                 </div>
             </div>
         </div>
@@ -496,14 +501,13 @@
                     date.setDate(date.getDate() + (dayIndex - 1));
                     return `${date.getMonth() + 1}/${date.getDate()}`;
                 },
-                // ✨ 計算飛行時間
                 calculateDuration(start, end) {
                     if (!start || !end) return '';
                     let [sH, sM] = start.split(':').map(Number);
                     let [eH, eM] = end.split(':').map(Number);
                     let startMin = sH * 60 + sM;
                     let endMin = eH * 60 + eM;
-                    if (endMin < startMin) endMin += 24 * 60; // 跨日處理
+                    if (endMin < startMin) endMin += 24 * 60;
                     let diff = endMin - startMin;
                     let h = Math.floor(diff / 60);
                     let m = diff % 60;
@@ -565,7 +569,6 @@
                 getEvents(day) { return (this.itinerary[day] || []).sort((a, b) => a.time.localeCompare(b.time)); },
                 addEvent() { if (!this.itinerary[this.currentDay]) this.itinerary[this.currentDay] = []; this.itinerary[this.currentDay].push({ ...this.newEvent }); this.showAddEventModal = false; this.newEvent = { time: '10:00', title: '', location: '' }; this.saveData(); },
                 deleteEvent(day, index) { this.itinerary[day].splice(index, 1); this.saveData(); },
-                // ✨ 存檔 key 使用 muji_ 開頭，確保資料獨立
                 saveData() { localStorage.setItem('muji_shopping', JSON.stringify(this.shoppingList)); localStorage.setItem('muji_itinerary', JSON.stringify(this.itinerary)); localStorage.setItem('muji_prep', JSON.stringify(this.prepList)); localStorage.setItem('muji_info', JSON.stringify(this.travelInfo)); localStorage.setItem('muji_settings', JSON.stringify(this.tripSettings)); }
             }
         }
