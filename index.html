@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>東京 | 日式收納風</title>
+    <title>旅程助手 | 日式收納風</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="東京之旅">
+    <meta name="apple-mobile-web-app-title" content="旅程助手">
     <meta name="theme-color" content="#EFEFEF">
     <meta name="format-detection" content="telephone=no">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5223/5223933.png"> 
@@ -18,24 +18,66 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background-color: #EFEFEF; color: #2D2D2D; overscroll-behavior-y: none; }
-        .app-container { max-width: 480px; margin: 0 auto; background: #F2F2F4; min-height: 100vh; position: relative; padding-bottom: 90px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
-        .card { background: #FFFFFF; border: 1px solid #DDDDDD; border-radius: 6px; margin-bottom: 16px; overflow: hidden; }
-        .card-header { background-color: #F9F9F9; border-bottom: 1px solid #EEEEEE; padding: 10px 16px; font-size: 13px; font-weight: 600; color: #666666; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; }
+        /* 字體與基礎設定 */
+        body { 
+            font-family: 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; 
+            background-color: #EFEFEF; 
+            color: #2D2D2D; 
+            overscroll-behavior-y: none; 
+        }
+        
+        .app-container { 
+            max-width: 480px; 
+            margin: 0 auto; 
+            background: #F2F2F4; 
+            min-height: 100vh; 
+            position: relative; 
+            padding-bottom: 90px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        .card { 
+            background: #FFFFFF; 
+            border: 1px solid #DDDDDD; 
+            border-radius: 6px; 
+            margin-bottom: 16px; 
+            overflow: hidden; 
+        }
+
+        .card-header {
+            background-color: #F9F9F9;
+            border-bottom: 1px solid #EEEEEE;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666666;
+            letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .card-body { padding: 16px; }
+
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         .rotate-anim { transition: transform 0.3s ease; }
         .rotate-anim:active { transform: rotate(180deg); }
         .map-frame { border: 0; width: 100%; height: 100%; border-radius: 4px; background: #eee; }
-        .text-muji { color: #7F1A1A; }
+
+        /* Muji 顏色系統 */
+        .text-muji { color: #7F1A1A; } 
         .bg-muji { background-color: #7F1A1A; }
         .border-muji { border-color: #7F1A1A; }
-        
-        /* 航班視覺化樣式 */
+
+        /* 航班視覺化樣式 (日式簡約灰) */
         .flight-line { height: 1px; background-color: #bbbbbb; position: relative; width: 100%; margin-top: 4px; }
         .flight-line::after { content: ''; position: absolute; right: 0; top: -2px; width: 6px; height: 6px; background-color: #bbbbbb; border-radius: 50%; }
         .flight-time { font-family: 'Roboto', sans-serif; font-weight: 300; color: #333; }
+        
+        /* 歡迎彈窗特效 */
+        .welcome-overlay { background-color: rgba(50, 50, 50, 0.6); backdrop-filter: blur(4px); }
     </style>
 </head>
 <body>
@@ -45,23 +87,46 @@
         <header class="bg-white px-6 py-5 border-b border-gray-300 sticky top-0 z-20 shadow-sm">
             <div class="flex justify-between items-start">
                 <span class="bg-gray-800 text-white text-[10px] font-bold px-2 py-0.5 tracking-widest rounded-sm" x-text="getYear() + ' 之旅'"></span>
+                
                 <div class="flex space-x-3 text-gray-500">
-                    <button @click="showSettingsModal = true" class="hover:text-gray-800 transition p-1"><i class="fas fa-cog"></i> 設定</button>
-                    <button @click="fetchRealTimeData()" class="hover:text-gray-800 transition p-1"><i class="fas fa-sync-alt" :class="{'fa-spin': isLoading}"></i></button>
+                    <button @click="showSettingsModal = true" class="hover:text-gray-800 transition p-1">
+                        <i class="fas fa-cog"></i> 設定
+                    </button>
+                    <button @click="fetchRealTimeData()" class="hover:text-gray-800 transition p-1">
+                        <i class="fas fa-sync-alt" :class="{'fa-spin': isLoading}"></i>
+                    </button>
                 </div>
             </div>
+            
             <h1 class="text-2xl font-bold mt-3 tracking-wide text-gray-900" x-text="tripSettings.title"></h1>
+            
             <div class="flex items-center mt-2 text-xs font-mono text-gray-500">
-                <span class="bg-gray-100 px-2 py-1 rounded-sm mr-2 border border-gray-200" x-text="formatDateRange()"></span> 
+                <span class="bg-gray-100 px-2 py-1 rounded-sm mr-2 border border-gray-200">
+                    <i class="fas fa-map-marker-alt mr-1 text-gray-400"></i><span x-text="tripSettings.destination"></span>
+                </span>
                 <span class="text-muji font-bold" x-text="'共 ' + tripDuration + ' 天'"></span>
             </div>
+            
             <div class="mt-5 flex space-x-3">
                 <div class="flex-1 bg-[#F5F5F5] p-3 rounded-sm border border-gray-200 flex items-center justify-between">
-                    <div><p class="text-[10px] text-gray-400 font-bold">東京天氣</p><span class="text-lg font-bold text-gray-700" x-text="weatherText">...</span></div>
-                    <i class="fas fa-temperature-high text-gray-300 text-xl"></i>
+                    <div class="flex items-center w-full">
+                        <i class="fas text-3xl mr-3" :class="weatherIcon"></i>
+                        <div>
+                            <div class="text-xl font-bold text-gray-800 leading-none">
+                                <span x-text="weatherTemp">--</span><span class="text-sm">°C</span>
+                            </div>
+                            <div class="text-[10px] text-gray-500 mt-1">
+                                體感 <span x-text="weatherApparent">--</span>°C
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="flex-1 bg-[#F5F5F5] p-3 rounded-sm border border-gray-200 flex items-center justify-between">
-                    <div><p class="text-[10px] text-gray-400 font-bold">日幣匯率</p><span class="text-lg font-bold text-gray-700" x-text="exchangeRate">...</span></div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 font-bold">日幣匯率</p>
+                        <span class="text-lg font-bold text-gray-700" x-text="exchangeRate">...</span>
+                    </div>
                     <i class="fas fa-yen-sign text-gray-300 text-xl"></i>
                 </div>
             </div>
@@ -83,8 +148,8 @@
                         <div x-show="!isEditingInfo" class="space-y-6">
                             
                             <div>
-                                <div class="flex items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
-                                    <div class="w-1/4"><span class="bg-gray-200 px-1 rounded-sm text-[10px] text-gray-600 font-bold">去程</span></div>
+                                <div class="flex justify-between items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
+                                    <div class="w-1/4"><span class="bg-gray-100 px-2 rounded-sm text-[10px] text-gray-600 font-bold">去程</span></div>
                                     <div class="w-2/4 text-center font-bold text-gray-700" x-text="travelInfo.flightOut.date"></div>
                                     <div class="w-1/4 text-right"><span x-text="travelInfo.flightOut.airline"></span> <span x-text="travelInfo.flightOut.no"></span></div>
                                 </div>
@@ -108,8 +173,8 @@
                             </div>
 
                             <div>
-                                <div class="flex items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
-                                    <div class="w-1/4"><span class="bg-gray-200 px-1 rounded-sm text-[10px] text-gray-600 font-bold">回程</span></div>
+                                <div class="flex justify-between items-center text-xs text-gray-500 mb-1 border-b border-gray-100 pb-1">
+                                    <div class="w-1/4"><span class="bg-gray-100 px-2 rounded-sm text-[10px] text-gray-600 font-bold">回程</span></div>
                                     <div class="w-2/4 text-center font-bold text-gray-700" x-text="travelInfo.flightIn.date"></div>
                                     <div class="w-1/4 text-right"><span x-text="travelInfo.flightIn.airline"></span> <span x-text="travelInfo.flightIn.no"></span></div>
                                 </div>
@@ -132,25 +197,24 @@
                                 </div>
                             </div>
 
-                            <div class="pt-2 border-t border-gray-100 mt-2">
+                            <div class="pt-1 mt-2 border-t border-gray-100">
                                 <div class="flex justify-between items-center mb-1">
-                                    <p class="text-[10px] text-gray-400 uppercase tracking-widest">Hotel</p>
+                                    <p class="text-[10px] text-gray-400 mb-1 uppercase tracking-widest">Hotel</p>
                                     <button @click="searchInMap(travelInfo.hotel.name)" class="text-xs text-blue-600 hover:underline flex items-center">
                                         <i class="fas fa-location-arrow mr-1"></i> 導航
                                     </button>
                                 </div>
                                 <p class="font-bold text-gray-800" x-text="travelInfo.hotel.name || '未設定'"></p>
-                                <p class="text-xs text-gray-500 mt-0.5" x-text="travelInfo.hotel.address"></p>
+                                <p class="text-xs text-gray-400 mt-0.5" x-text="travelInfo.hotel.address"></p>
                             </div>
                         </div>
 
-                        <div x-show="isEditingInfo" class="space-y-4 text-sm mt-2">
-                            
+                        <div x-show="isEditingInfo" class="space-y-3 text-sm">
                             <div class="bg-gray-50 p-2 border border-gray-200 rounded-sm">
-                                <p class="text-[10px] font-bold text-gray-500 mb-1">去程 OUTBOUND</p>
+                                <p class="text-[10px] font-bold text-gray-500 mb-1">去程資訊</p>
                                 <div class="flex space-x-2 mb-2">
                                     <select x-model="travelInfo.flightOut.airline" class="w-1/2 p-1 bg-white border border-gray-300 rounded-sm text-xs"><option value="">航空公司...</option><template x-for="air in airlineOptions"><option :value="air" x-text="air"></option></template></select>
-                                    <input x-model="travelInfo.flightOut.no" placeholder="航班號 (BR198)" class="w-1/2 p-1 border border-gray-300 rounded-sm text-xs">
+                                    <input x-model="travelInfo.flightOut.no" placeholder="航班號" class="w-1/2 p-1 border border-gray-300 rounded-sm text-xs">
                                 </div>
                                 <div class="mb-2">
                                     <label class="text-[10px] text-gray-400 block mb-1">出發日期</label>
@@ -167,10 +231,10 @@
                             </div>
 
                             <div class="bg-gray-50 p-2 border border-gray-200 rounded-sm">
-                                <p class="text-[10px] font-bold text-gray-500 mb-1">回程 INBOUND</p>
+                                <p class="text-[10px] font-bold text-gray-500 mb-1">回程資訊</p>
                                 <div class="flex space-x-2 mb-2">
                                     <select x-model="travelInfo.flightIn.airline" class="w-1/2 p-1 bg-white border border-gray-300 rounded-sm text-xs"><option value="">航空公司...</option><template x-for="air in airlineOptions"><option :value="air" x-text="air"></option></template></select>
-                                    <input x-model="travelInfo.flightIn.no" placeholder="航班號 (BR197)" class="w-1/2 p-1 border border-gray-300 rounded-sm text-xs">
+                                    <input x-model="travelInfo.flightIn.no" placeholder="航班號" class="w-1/2 p-1 border border-gray-300 rounded-sm text-xs">
                                 </div>
                                 <div class="mb-2">
                                     <label class="text-[10px] text-gray-400 block mb-1">出發日期</label>
@@ -187,12 +251,11 @@
                             </div>
 
                             <div class="bg-gray-50 p-2 border border-gray-200 rounded-sm">
-                                <p class="text-[10px] font-bold text-gray-500 mb-1">住宿 HOTEL</p>
-                                <input x-model="travelInfo.hotel.name" placeholder="飯店名稱" class="w-full mb-1 p-1 border border-gray-300 rounded-sm">
-                                <input x-model="travelInfo.hotel.address" placeholder="地址 (用於導航)" class="w-full p-1 border border-gray-300 rounded-sm">
+                                <p class="text-[10px] font-bold text-gray-500 mb-1">住宿資訊</p>
+                                <input x-model="travelInfo.hotel.name" placeholder="飯店名稱" class="w-full mb-1 p-1 border border-gray-300 rounded-sm text-xs">
+                                <input x-model="travelInfo.hotel.address" placeholder="地址 (用於導航)" class="w-full p-1 border border-gray-300 rounded-sm text-xs">
                             </div>
-                            
-                            <button @click="saveData(); isEditingInfo = false" class="w-full bg-muji text-white py-2 rounded-sm text-xs font-bold shadow-sm hover:opacity-90">儲存設定</button>
+                            <button @click="saveData(); isEditingInfo = false" class="w-full bg-muji text-white py-2 rounded-sm text-xs font-bold shadow-sm">儲存設定</button>
                         </div>
                     </div>
                 </div>
@@ -207,7 +270,10 @@
                     <h2 class="font-bold text-gray-700 border-l-4 border-muji pl-3">每日行程</h2>
                     <button @click="showAddEventModal = true" class="text-muji text-sm font-bold hover:bg-white hover:shadow-sm px-2 py-1 rounded transition"><i class="fas fa-plus"></i> 新增</button>
                 </div>
-                <button @click="showDayRoute(currentDay)" class="w-full py-2 bg-white border border-gray-300 text-gray-600 text-xs font-bold rounded-sm shadow-sm hover:bg-gray-50 flex items-center justify-center"><i class="fas fa-map mr-2 text-muji"></i> 查看今日路線地圖</button>
+                
+                <button @click="showDayRoute(currentDay)" class="w-full py-2 bg-white border border-gray-300 text-gray-600 text-xs font-bold rounded-sm shadow-sm hover:bg-gray-50 flex items-center justify-center">
+                    <i class="fas fa-map mr-2 text-muji"></i> 查看今日路線地圖
+                </button>
 
                 <div class="space-y-3">
                     <template x-for="(event, index) in getEvents(currentDay)" :key="index">
@@ -242,7 +308,7 @@
                 </div>
 
                 <div x-show="currentListTab === 'prep'" class="space-y-3 pb-20">
-                    <div class="bg-blue-50 border border-blue-100 p-3 rounded-sm flex items-start space-x-3"><i class="fas fa-info-circle text-blue-400 mt-0.5"></i><p class="text-xs text-blue-800 leading-relaxed">請確認護照效期大於 6 個月，並提前截圖 Visit Japan Web QR Code。</p></div>
+                    <div class="bg-blue-50 border border-blue-100 p-3 rounded-sm flex items-start space-x-3"><i class="fas fa-info-circle text-blue-400 mt-0.5"></i><p class="text-xs text-blue-800 leading-relaxed">系統已根據目的地自動生成建議清單。</p></div>
                     <div class="card">
                         <div class="card-header">檢查清單</div>
                         <div class="card-body !pt-2">
@@ -257,11 +323,7 @@
                 </div>
 
                 <div x-show="currentListTab === 'shop'" class="space-y-4 pb-20">
-                    <div class="bg-gray-800 rounded-md p-5 text-white shadow-md relative overflow-hidden">
-                         <div class="absolute -right-4 -top-4 text-gray-700 opacity-20"><i class="fas fa-shopping-bag fa-6x"></i></div>
-                        <div class="flex justify-between items-end mb-3 relative z-10"><div><p class="text-[10px] text-gray-400 font-bold">總金額 (日幣)</p><h2 class="text-3xl font-bold">¥<span x-text="shoppingTotal.toLocaleString()"></span></h2></div><div class="text-right"><p class="text-[10px] text-gray-400 font-bold">約台幣</p><p class="font-mono font-bold">NT$ <span x-text="Math.round(shoppingTotal * exchangeRate).toLocaleString()"></span></p></div></div>
-                        <div class="relative z-10"><div class="flex justify-between text-[10px] text-gray-400 mb-1"><span>免稅門檻 (¥5,000)</span><span x-show="shoppingTotal >= 5000" class="text-green-400 font-bold">已達標</span></div><div class="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden"><div class="bg-gradient-to-r from-red-500 to-red-600 h-1.5 rounded-full transition-all duration-500" :style="'width: ' + Math.min((shoppingTotal / 5000) * 100, 100) + '%'"></div></div></div>
-                    </div>
+                    <div class="bg-gray-800 rounded-md p-5 text-white shadow-md relative overflow-hidden"><div class="absolute -right-4 -top-4 text-gray-700 opacity-20"><i class="fas fa-shopping-bag fa-6x"></i></div><div class="flex justify-between items-end mb-3 relative z-10"><div><p class="text-[10px] text-gray-400 font-bold">總金額 (日幣)</p><h2 class="text-3xl font-bold">¥<span x-text="shoppingTotal.toLocaleString()"></span></h2></div><div class="text-right"><p class="text-[10px] text-gray-400 font-bold">約台幣</p><p class="font-mono font-bold">NT$ <span x-text="Math.round(shoppingTotal * exchangeRate).toLocaleString()"></span></p></div></div><div class="relative z-10"><div class="flex justify-between text-[10px] text-gray-400 mb-1"><span>免稅門檻 (¥5,000)</span><span x-show="shoppingTotal >= 5000" class="text-green-400 font-bold">已達標</span></div><div class="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden"><div class="bg-gradient-to-r from-red-500 to-red-600 h-1.5 rounded-full transition-all duration-500" :style="'width: ' + Math.min((shoppingTotal / 5000) * 100, 100) + '%'"></div></div></div></div>
                     <div class="card">
                         <div class="card-header"><span>購物清單</span><span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-500" x-text="shoppingList.length + ' 項目'"></span></div>
                         <div class="card-body !pt-2">
@@ -302,11 +364,28 @@
             <button @click="currentTab = 'tools'" :class="{'text-muji': currentTab === 'tools', 'text-gray-300': currentTab !== 'tools'}" class="flex flex-col items-center w-1/4 transition"><i class="fas fa-ellipsis-h text-xl mb-1"></i><span class="text-[10px] font-bold tracking-widest">工具</span></button>
         </nav>
 
+        <div x-show="showWelcomeModal" class="fixed inset-0 welcome-overlay z-[60] flex items-center justify-center p-6" 
+             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100">
+            <div class="bg-white rounded-lg p-8 w-full max-w-sm shadow-2xl border border-gray-200 text-center">
+                <div class="mb-6"><i class="fas fa-suitcase-rolling text-4xl text-gray-700 mb-4 block"></i><h2 class="text-xl font-bold text-gray-800 tracking-wide">開始旅程</h2><p class="text-xs text-gray-500 mt-2">設定目的地，為您準備專屬行前清單。</p></div>
+                <div class="space-y-4 text-left">
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">旅程名稱 (如: 畢業旅行)</label><input x-model="tempSettings.title" class="w-full border-b-2 border-gray-200 py-2 focus:outline-none focus:border-muji text-gray-800 bg-transparent placeholder-gray-300 transition" placeholder="輸入名稱"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">目的地 (如: 大阪)</label><input x-model="tempSettings.destination" class="w-full border-b-2 border-gray-200 py-2 focus:outline-none focus:border-muji text-gray-800 bg-transparent placeholder-gray-300 transition" placeholder="輸入城市"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">出發日期</label><input x-model="tempSettings.startDate" type="date" class="w-full border-b-2 border-gray-200 py-2 focus:outline-none focus:border-muji text-gray-800 bg-transparent"></div>
+                        <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">回程日期</label><input x-model="tempSettings.endDate" type="date" class="w-full border-b-2 border-gray-200 py-2 focus:outline-none focus:border-muji text-gray-800 bg-transparent"></div>
+                    </div>
+                </div>
+                <button @click="initializeTrip()" class="w-full bg-gray-800 text-white py-3 rounded-md mt-8 font-bold tracking-widest shadow-lg hover:bg-gray-700 transform transition active:scale-95">建立行程</button>
+            </div>
+        </div>
+
         <div x-show="showSettingsModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-6 backdrop-blur-sm" style="display: none;">
             <div class="bg-white rounded-md p-6 w-full max-w-sm shadow-2xl border border-gray-200">
                 <h3 class="font-bold text-lg mb-6 text-gray-800 tracking-wide border-b border-gray-100 pb-2">旅程設定</h3>
                 <div class="space-y-5">
-                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">標題</label><input x-model="tripSettings.title" class="w-full border border-gray-300 rounded-sm p-2 focus:outline-none focus:border-muji text-gray-700 bg-gray-50"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">旅程名稱</label><input x-model="tripSettings.title" class="w-full border border-gray-300 rounded-sm p-2 focus:outline-none focus:border-muji text-gray-700 bg-gray-50"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">目的地</label><input x-model="tripSettings.destination" class="w-full border border-gray-300 rounded-sm p-2 focus:outline-none focus:border-muji text-gray-700 bg-gray-50"></div>
                     <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">開始日期</label><input x-model="tripSettings.startDate" type="date" class="w-full border border-gray-300 rounded-sm p-2 focus:outline-none text-gray-700 bg-gray-50"></div>
                     <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">結束日期</label><input x-model="tripSettings.endDate" type="date" class="w-full border border-gray-300 rounded-sm p-2 focus:outline-none text-gray-700 bg-gray-50"></div>
                 </div>
@@ -314,9 +393,7 @@
                     <button @click="showSettingsModal = false" class="flex-1 py-2 border border-gray-300 text-gray-500 text-xs font-bold rounded-sm hover:bg-gray-50">取消</button>
                     <button @click="saveTripSettings()" class="flex-1 py-2 bg-muji text-white text-xs font-bold tracking-widest hover:opacity-90 rounded-sm shadow-sm">確定</button>
                 </div>
-                <div class="mt-6 pt-4 border-t border-gray-100 text-center">
-                    <button @click="resetData()" class="text-xs text-red-400 hover:text-red-600 underline tracking-wide"><i class="fas fa-trash-alt mr-1"></i>清除所有資料並重置</button>
-                </div>
+                <div class="mt-6 pt-4 border-t border-gray-100 text-center"><button @click="resetData()" class="text-xs text-red-400 hover:text-red-600 underline tracking-wide"><i class="fas fa-trash-alt mr-1"></i>清除所有資料並重置</button></div>
             </div>
         </div>
 
@@ -345,25 +422,31 @@
                 exchangeRate: 0.21,
                 rateDate: '',
                 weatherText: '...',
+                weatherTemp: '--',
+                weatherApparent: '--',
+                weatherIcon: 'fa-cloud',
+                weatherLocation: '東京',
                 isLoading: false,
                 convertInput: '',
                 isJpyToTwd: true,
                 showAddEventModal: false,
                 isEditingInfo: false,
                 showSettingsModal: false,
-                // 中文預設值
-                tripSettings: { title: '東京 7 日遊', startDate: '2026-05-10', endDate: '2026-05-16' },
+                showWelcomeModal: false, 
+
+                // ✨ 欄位分離
+                tempSettings: { title: '', destination: '', startDate: '', endDate: '' },
+                tripSettings: { title: '東京 7 日遊', destination: '東京', startDate: '2026-05-10', endDate: '2026-05-16' },
+                
                 airlineOptions: ['中華航空', '長榮航空', '星宇航空', '台灣虎航', '酷航', '國泰航空', '日本航空 (JAL)', '全日空 (ANA)', '樂桃航空', '捷星航空', '其他'],
                 shoppingList: [],
                 prepList: [],
                 itinerary: {},
-                travelInfo: { 
-                    flightOut: { airline: '', date: '', time: '', no: '', depTime: '', arrTime: '', depAirport: 'TPE', arrAirport: 'NRT' }, 
-                    flightIn: { airline: '', date: '', time: '', no: '', depTime: '', arrTime: '', depAirport: 'NRT', arrAirport: 'TPE' }, 
-                    hotel: { name: '', address: '' } 
-                },
+                travelInfo: { flightOut: { airline: '', date: '', time: '', no: '', depTime: '', arrTime: '', depAirport: 'TPE', arrAirport: 'NRT' }, flightIn: { airline: '', date: '', time: '', no: '', depTime: '', arrTime: '', depAirport: 'NRT', arrAirport: 'TPE' }, hotel: { name: '', address: '' } },
                 newItemName: '', newItemPrice: '', newPrepItem: '', newEvent: { time: '10:00', title: '', location: '' },
                 mapSearchQuery: '', mapUrl: 'https://maps.google.com/maps?q=Tokyo&output=embed', isMapLoading: false,
+
+                cityCoordinates: { '東京': { lat: 35.6895, lon: 139.6917 }, '大阪': { lat: 34.6937, lon: 135.5023 }, '京都': { lat: 35.0116, lon: 135.7681 }, '北海道': { lat: 43.0618, lon: 141.3545 }, '福岡': { lat: 33.5902, lon: 130.4017 }, '沖繩': { lat: 26.2124, lon: 127.6809 }, '首爾': { lat: 37.5665, lon: 126.9780 }, '台北': { lat: 25.0330, lon: 121.5654 }, '曼谷': { lat: 13.7563, lon: 100.5018 } },
 
                 get tripDuration() {
                     const start = new Date(this.tripSettings.startDate);
@@ -381,71 +464,126 @@
                     date.setDate(date.getDate() + (dayIndex - 1));
                     return `${date.getMonth() + 1}/${date.getDate()}`;
                 },
-                // ✨ 自動判斷時區函數
                 getTimezoneOffset(input) {
-                    if (!input) return 8; // 預設台灣/其他地區
+                    if (!input) return 8; 
                     const s = input.toUpperCase();
-                    // 日本常見代碼與關鍵字
                     const jpKeywords = ['NRT', 'HND', 'KIX', 'OKA', 'CTS', 'FUK', 'NGO', 'SDJ', 'TYO', 'OSA', 'JP', 'JAPAN', '成田', '羽田', '關西', '大阪', '沖繩', '福岡', '名古屋', '千歲', '北海道'];
-                    if (jpKeywords.some(k => s.includes(k))) return 9; // 日本 UTC+9
-                    return 8; // 台灣 UTC+8
+                    if (jpKeywords.some(k => s.includes(k))) return 9; 
+                    return 8; 
                 },
-                // ✨ 修正後的時差計算函數
                 calculateDuration(start, end, depCode, arrCode) {
                     if (!start || !end) return '';
                     let [sH, sM] = start.split(':').map(Number);
                     let [eH, eM] = end.split(':').map(Number);
                     let startMin = sH * 60 + sM;
                     let endMin = eH * 60 + eM;
-
-                    // 取得起降時區偏移 (8 或 9)
                     let depOffset = this.getTimezoneOffset(depCode);
                     let arrOffset = this.getTimezoneOffset(arrCode);
-                    
-                    // 修正抵達時間：將抵達時間「還原」為出發地時間來計算
-                    // 例如 TPE(8) -> NRT(9)，抵達時已 +1 小時，所以要減回來才準
                     let timeDiffMinutes = (arrOffset - depOffset) * 60;
-                    
                     let flightDuration = endMin - startMin - timeDiffMinutes;
-                    
-                    if (flightDuration < 0) flightDuration += 24 * 60; // 跨日處理
-
+                    if (flightDuration < 0) flightDuration += 24 * 60; 
                     let h = Math.floor(flightDuration / 60);
                     let m = flightDuration % 60;
                     return `${h}h ${m}m`;
                 },
+                getWeatherIcon(code) {
+                    if (code === 0) return 'fa-sun text-yellow-400'; // 太陽
+                    if (code >= 1 && code <= 3) return 'fa-cloud-sun text-gray-400'; // 晴時多雲
+                    if (code >= 45 && code <= 48) return 'fa-smog text-gray-400'; // 霧
+                    if (code >= 51 && code <= 67) return 'fa-cloud-rain text-blue-400'; // 雨
+                    if (code >= 71 && code <= 77) return 'fa-snowflake text-white'; // 雪 (深色背景用白色)
+                    if (code >= 80 && code <= 82) return 'fa-cloud-showers-heavy text-blue-500'; // 大雨
+                    if (code >= 85 && code <= 86) return 'fa-snowflake text-white'; // 大雪
+                    if (code >= 95) return 'fa-bolt text-yellow-400'; // 雷雨
+                    return 'fa-cloud text-gray-400'; // 預設雲
+                },
                 initApp() {
-                    const savedShopping = localStorage.getItem('muji_shopping');
+                    const savedSettings = localStorage.getItem('muji_settings'); // 注意：這裡維持 muji_ 確保獨立，若要改回 tokyo_ 請自行替換
+                    
+                    if (!savedSettings) {
+                        this.showWelcomeModal = true;
+                        const today = new Date().toISOString().split('T')[0];
+                        this.tempSettings.startDate = today;
+                        this.tempSettings.endDate = today;
+                    } else {
+                        this.tripSettings = JSON.parse(savedSettings);
+                        // 相容舊資料
+                        if (!this.tripSettings.destination) {
+                            this.tripSettings.destination = this.tripSettings.title.includes('大阪') ? '大阪' : '東京';
+                        }
+                        this.loadOtherData();
+                        this.fetchRealTimeData();
+                    }
+                },
+
+                // ✨ 智慧初始化
+                initializeTrip() {
+                    if (!this.tempSettings.title || !this.tempSettings.startDate || !this.tempSettings.endDate) {
+                        alert('請填寫完整資訊！');
+                        return;
+                    }
+                    if (!this.tempSettings.destination) {
+                        this.tempSettings.destination = this.tempSettings.title.substring(0, 2);
+                    }
+
+                    this.tripSettings = { ...this.tempSettings };
+                    this.generatePrepList();
+
+                    this.itinerary = {};
+                    this.shoppingList = [];
+                    this.travelInfo = { flightOut: { airline: '', date: '', time: '', no: '', depTime: '', arrTime: '', depAirport: 'TPE', arrAirport: 'NRT' }, flightIn: { airline: '', date: '', time: '', no: '', depTime: '', arrTime: '', depAirport: 'NRT', arrAirport: 'TPE' }, hotel: { name: '', address: '' } };
+
+                    this.saveData();
+                    this.showWelcomeModal = false;
+                    this.fetchRealTimeData();
+                    this.autoUpdateMapByDest();
+                },
+
+                // ✨ 智慧清單生成 (依賴 destination)
+                generatePrepList() {
+                    let defaultPrep = [{ name: '現金', done: false }, { name: '信用卡', done: false }];
+                    const dest = this.tripSettings.destination;
+                    const jpKeywords = ['日本', '東京', '大阪', '京都', '北海道', '沖繩', '福岡', 'Japan', 'Tokyo', 'Osaka'];
+                    const domesticKeywords = ['台灣', '臺灣', '台北', '新北', '桃園', '新竹', '苗栗', '台中', '彰化', '南投', '雲林', '嘉義', '台南', '高雄', '屏東', '宜蘭', '花蓮', '台東', '澎湖', '金門', '馬祖', '國內', 'Domestic', 'Taiwan'];
+                    
+                    let isDomestic = domesticKeywords.some(k => dest.includes(k));
+
+                    if (!isDomestic) {
+                        defaultPrep.push({ name: '護照', done: false });
+                        defaultPrep.push({ name: '網卡', done: false });
+                    }
+                    
+                    if (jpKeywords.some(k => dest.includes(k))) {
+                        defaultPrep.push({ name: 'Visit Japan Web', done: false });
+                    }
+                    
+                    this.prepList = defaultPrep;
+                },
+
+                loadOtherData() {
+                    const savedShopping = localStorage.getItem('muji_shopping'); // 注意：這裡維持 muji_
                     const savedItinerary = localStorage.getItem('muji_itinerary');
                     const savedPrep = localStorage.getItem('muji_prep');
                     const savedInfo = localStorage.getItem('muji_info');
-                    const savedSettings = localStorage.getItem('muji_settings');
-                    
-                    if (savedShopping) this.shoppingList = JSON.parse(savedShopping);
-                    else this.shoppingList = [{ name: '安耐曬防曬', price: 2500, bought: false }];
-                    if (savedItinerary) this.itinerary = JSON.parse(savedItinerary);
-                    else this.itinerary = {}; 
-                    if (savedPrep) this.prepList = JSON.parse(savedPrep);
-                    else this.prepList = [{ name: '護照', done: false }, { name: 'Visit Japan Web', done: false }, { name: '現金 / 信用卡', done: false }, { name: '網卡', done: false }];
-                    if (savedInfo) { 
-                        let loadedInfo = JSON.parse(savedInfo);
-                        if(!loadedInfo.flightOut.depTime) loadedInfo.flightOut.depTime = '';
-                        if(!loadedInfo.flightOut.arrTime) loadedInfo.flightOut.arrTime = '';
-                        if(!loadedInfo.flightOut.depAirport) loadedInfo.flightOut.depAirport = 'TPE';
-                        if(!loadedInfo.flightOut.arrAirport) loadedInfo.flightOut.arrAirport = 'NRT';
-                        if(!loadedInfo.flightIn.depTime) loadedInfo.flightIn.depTime = '';
-                        if(!loadedInfo.flightIn.arrTime) loadedInfo.flightIn.arrTime = '';
-                        if(!loadedInfo.flightIn.depAirport) loadedInfo.flightIn.depAirport = 'NRT';
-                        if(!loadedInfo.flightIn.arrAirport) loadedInfo.flightIn.arrAirport = 'TPE';
-                        this.travelInfo = loadedInfo;
-                    }
-                    if (savedSettings) this.tripSettings = JSON.parse(savedSettings);
-                    this.fetchRealTimeData();
+
+                    if (savedShopping) this.shoppingList = JSON.parse(savedShopping); else this.shoppingList = [];
+                    if (savedItinerary) this.itinerary = JSON.parse(savedItinerary); else this.itinerary = {}; 
+                    if (savedPrep) this.prepList = JSON.parse(savedPrep); else this.prepList = [];
+                    if (savedInfo) this.travelInfo = JSON.parse(savedInfo);
                 },
-                saveTripSettings() { this.saveData(); this.showSettingsModal = false; },
+
+                saveTripSettings() { 
+                    this.saveData(); 
+                    this.showSettingsModal = false; 
+                    this.generatePrepList(); 
+                    this.autoUpdateMapByDest(); 
+                    this.saveData(); 
+                    this.fetchRealTimeData(); 
+                },
                 
                 resetData() {
                     if (confirm('⚠️ 警告：確定要刪除所有資料嗎？\n\n您的行程、清單、設定都將完全消失且無法復原。')) {
+                        // 清除 muji_ 開頭的資料
                         localStorage.removeItem('muji_shopping');
                         localStorage.removeItem('muji_itinerary');
                         localStorage.removeItem('muji_prep');
@@ -457,11 +595,68 @@
 
                 addPrepItem() { if(!this.newPrepItem) return; this.prepList.push({ name: this.newPrepItem, done: false }); this.newPrepItem = ''; this.saveData(); },
                 deletePrepItem(index) { this.prepList.splice(index, 1); this.saveData(); },
-                updateMap() { if(!this.mapSearchQuery) return; this.isMapLoading = true; this.mapUrl = 'https://maps.google.com/maps?q=' + encodeURIComponent(this.mapSearchQuery + ' 東京') + '&output=embed'; setTimeout(() => { this.isMapLoading = false; }, 1500); },
+                
+                updateMap() { if(!this.mapSearchQuery) return; this.isMapLoading = true; this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(this.mapSearchQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`; setTimeout(() => { this.isMapLoading = false; }, 1500); },
+                
+                autoUpdateMapByDest() {
+                    this.mapSearchQuery = this.tripSettings.destination;
+                    this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(this.mapSearchQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+                },
+
                 searchInMap(location) { if(!location) return; this.mapSearchQuery = location; this.currentTab = 'map'; this.updateMap(); },
                 showDayRoute(day) { const events = this.itinerary[day] || []; if (events.length === 0) { alert('該日尚無行程。'); return; } if (events.length === 1) { this.searchInMap(events[0].title); return; } const start = events[0].title; const end = events[events.length - 1].title; this.isMapLoading = true; this.currentTab = 'map'; this.mapUrl = 'https://maps.google.com/maps?q=from:' + encodeURIComponent(start) + '+to:' + encodeURIComponent(end) + '&output=embed'; setTimeout(() => { this.isMapLoading = false; }, 1500); },
                 calculateExchange() { if (!this.convertInput) return 0; return this.isJpyToTwd ? Math.round(this.convertInput * this.exchangeRate) : Math.round(this.convertInput / this.exchangeRate); },
-                async fetchRealTimeData() { this.isLoading = true; this.weatherText = '...'; try { const rateRes = await fetch('https://api.exchangerate-api.com/v4/latest/JPY'); const rateData = await rateRes.json(); if(rateData && rateData.rates && rateData.rates.TWD) { this.exchangeRate = rateData.rates.TWD; this.rateDate = rateData.date; } } catch (e) { console.error(e); } try { const weatherRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.6895&longitude=139.6917&current_weather=true'); const weatherData = await weatherRes.json(); if(weatherData && weatherData.current_weather) { this.weatherText = `${weatherData.current_weather.temperature}°`; } } catch (e) { this.weatherText = '--'; } this.isLoading = false; },
+                
+                async fetchRealTimeData() {
+                    this.isLoading = true;
+                    this.weatherText = '...';
+                    this.weatherTemp = '--';
+                    this.weatherApparent = '--';
+                    
+                    try {
+                        const rateRes = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
+                        const rateData = await rateRes.json();
+                        if(rateData && rateData.rates && rateData.rates.TWD) {
+                            this.exchangeRate = rateData.rates.TWD;
+                            this.rateDate = rateData.date;
+                        }
+                    } catch (e) { console.error(e); }
+
+                    try {
+                        let lat = 35.6895; 
+                        let lon = 139.6917;
+                        // ✨ 使用 destination 欄位判斷
+                        const dest = this.tripSettings.destination || '東京';
+                        let locationName = dest;
+
+                        let found = false;
+                        for (const [city, coords] of Object.entries(this.cityCoordinates)) {
+                            if (dest.includes(city)) {
+                                lat = coords.lat;
+                                lon = coords.lon;
+                                locationName = city;
+                                found = true;
+                                break;
+                            }
+                        }
+                        this.weatherLocation = locationName;
+
+                        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code&timezone=auto`);
+                        const weatherData = await weatherRes.json();
+                        if(weatherData && weatherData.current) {
+                            this.weatherText = locationName;
+                            this.weatherTemp = weatherData.current.temperature_2m;
+                            this.weatherApparent = weatherData.current.apparent_temperature;
+                            this.weatherIcon = this.getWeatherIcon(weatherData.current.weather_code);
+                        }
+                    } catch (e) { 
+                        console.error(e); 
+                        this.weatherText = '無法取得'; 
+                    }
+                    
+                    this.isLoading = false;
+                },
+
                 get shoppingTotal() { return this.shoppingList.filter(item => item.bought).reduce((sum, item) => sum + parseInt(item.price || 0), 0); },
                 addNewItem() { if (!this.newItemName) return; this.shoppingList.push({ name: this.newItemName, price: this.newItemPrice || 0, bought: false }); this.newItemName = ''; this.newItemPrice = ''; this.saveData(); },
                 deleteItem(index) { this.shoppingList.splice(index, 1); this.saveData(); },
